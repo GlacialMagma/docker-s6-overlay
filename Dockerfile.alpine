@@ -1,0 +1,29 @@
+## s6 init system builder
+FROM alpine:3.7
+
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+ARG PACKAGE
+
+ENV URL https://github.com/just-containers/s6-overlay/releases/download/${VERSION}
+ENV SRC ${PACKAGE}.tar.gz
+ENV GPG_SIG ${SRC}.sig
+ENV SRC_URL ${URL}/${SRC}
+ENV GPG_SIG_URL ${SRC_URL}.sig
+
+ENV BUILD_DEPS \
+     curl \
+     gnupg \
+     tar
+
+WORKDIR /tmp
+
+RUN apk add --no-cache ${BUILD_DEPS} --virtual .build-deps && \
+    curl -sSL -o ${GPG_SIG} ${GPG_SIG_URL} && \
+    curl -sSL -o ${SRC} ${SRC_URL} && \
+    curl https://keybase.io/justcontainers/key.asc | gpg --import && \
+    gpg --verify ${GPG_SIG} ${SRC} && \
+    tar -xzf /tmp/${SRC} -C / && \
+    rm -rf /tmp/${SRC} ${SRC} ${GPG_SIG} && \
+    apk del .build-deps
